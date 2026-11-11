@@ -1,0 +1,1 @@
+- [Food photography](food-photography.md) — Food Hub should use actual food photos, not illustrations.
