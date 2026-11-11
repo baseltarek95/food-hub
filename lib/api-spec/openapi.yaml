@@ -11,6 +11,96 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /food/catalog:
+    get:
+      operationId: getFoodCatalog
+      responses:
+        "200":
+          description: Curated recipe and sample instructor catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodCatalog"
+  /food/workspace:
+    get:
+      operationId: getFoodWorkspace
+      responses:
+        "200":
+          description: This browser's guest cooking workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodWorkspace"
+    patch:
+      operationId: updateFoodWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceInput"
+      responses:
+        "200":
+          description: Saved workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodWorkspace"
+  /food/match:
+    post:
+      operationId: matchFoodIngredients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngredientInput"
+      responses:
+        "200":
+          description: Ingredient overlap, not AI-generated food safety advice
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecipeMatch"
+  /food/lesson-requests:
+    post:
+      operationId: createLessonRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LessonInput"
+      responses:
+        "201":
+          description: Saved draft request, not a confirmed booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonRequest"
+  /food/lesson-requests/{id}:
+    delete:
+      operationId: deleteLessonRequest
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Draft request removed
+  /food/summary:
+    get:
+      operationId: getFoodSummary
+      responses:
+        "200":
+          description: Personal cooking totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodSummary"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +116,228 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    Ingredient:
+      type: object
+      required: [name, quantity, unit]
+      properties:
+        name: { type: string }
+        quantity: { type: number }
+        unit: { type: string }
+    CookingStep:
+      type: object
+      required: [text, timerSeconds]
+      properties:
+        text: { type: string }
+        timerSeconds: { type: integer }
+    FoodRecipe:
+      type: object
+      required: [id, title, subtitle, description, image, minutes, servings, category, vegetarian, ingredients, steps, calories, difficulty]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subtitle: { type: string }
+        description: { type: string }
+        image: { type: string }
+        minutes: { type: integer }
+        servings: { type: integer }
+        category: { type: string }
+        vegetarian: { type: boolean }
+        calories: { type: integer }
+        difficulty: { type: string }
+        ingredients:
+          type: array
+          items: { $ref: "#/components/schemas/Ingredient" }
+        steps:
+          type: array
+          items: { $ref: "#/components/schemas/CookingStep" }
+    HomeCook:
+      type: object
+      required: [id, name, area, bio, languages, dishes, hourlyRate, currency, sample]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        area: { type: string }
+        bio: { type: string }
+        languages:
+          type: array
+          items: { type: string }
+        dishes:
+          type: array
+          items: { type: string }
+        hourlyRate: { type: number }
+        currency: { type: string }
+        sample: { type: boolean }
+    FoodCourse:
+      type: object
+      required: [id, title, teacher, image, description, price, lessons, sample]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        teacher: { type: string }
+        image: { type: string }
+        description: { type: string }
+        price: { type: number }
+        lessons:
+          type: array
+          items: { type: string }
+        sample: { type: boolean }
+    FoodVoucher:
+      type: object
+      required: [code, title, description, percent]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        percent: { type: integer }
+    FoodCatalog:
+      type: object
+      required: [recipes, cooks, courses, vouchers, currency, servicesLive]
+      properties:
+        recipes:
+          type: array
+          items: { $ref: "#/components/schemas/FoodRecipe" }
+        cooks:
+          type: array
+          items: { $ref: "#/components/schemas/HomeCook" }
+        courses:
+          type: array
+          items: { $ref: "#/components/schemas/FoodCourse" }
+        vouchers:
+          type: array
+          items: { $ref: "#/components/schemas/FoodVoucher" }
+        currency: { type: string }
+        servicesLive: { type: boolean }
+    PlanEntry:
+      type: object
+      required: [id, date, meal, recipeId, servings]
+      properties:
+        id: { type: string, maxLength: 80 }
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        meal: { type: string, enum: [Breakfast, Lunch, Dinner] }
+        recipeId: { type: string }
+        servings: { type: integer, minimum: 1, maximum: 20 }
+    GroceryItem:
+      type: object
+      required: [id, name, quantity, unit, checked]
+      properties:
+        id: { type: string, maxLength: 80 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        quantity: { type: number, minimum: 0.01, maximum: 100000 }
+        unit: { type: string, maxLength: 30 }
+        checked: { type: boolean }
+    BasketItem:
+      type: object
+      required: [id, kind, referenceId, quantity]
+      properties:
+        id: { type: string, maxLength: 80 }
+        kind: { type: string, enum: [course, grocery] }
+        referenceId: { type: string, maxLength: 100 }
+        quantity: { type: integer, minimum: 1, maximum: 50 }
+    CookDraft:
+      type: object
+      required: [displayName, area, dishes, rate, hours, format]
+      properties:
+        displayName: { type: string, maxLength: 60 }
+        area: { type: string, maxLength: 100 }
+        dishes: { type: string, maxLength: 500 }
+        rate: { type: number, minimum: 0, maximum: 10000 }
+        hours: { type: integer, minimum: 1, maximum: 60 }
+        format: { type: string, enum: [online, home] }
+    CourseProgress:
+      type: object
+      required: [courseId, completed]
+      properties:
+        courseId: { type: string }
+        completed:
+          type: array
+          maxItems: 100
+          items: { type: integer, minimum: 0, maximum: 100 }
+    WorkspaceInput:
+      type: object
+      properties:
+        nickname: { type: string, minLength: 1, maxLength: 60 }
+        savedRecipeIds:
+          type: array
+          maxItems: 200
+          items: { type: string }
+        plan:
+          type: array
+          maxItems: 200
+          items: { $ref: "#/components/schemas/PlanEntry" }
+        groceries:
+          type: array
+          maxItems: 300
+          items: { $ref: "#/components/schemas/GroceryItem" }
+        basket:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/BasketItem" }
+        voucher: { type: string, maxLength: 30 }
+        courseProgress:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/CourseProgress" }
+        cookDraft:
+          $ref: "#/components/schemas/CookDraft"
+    FoodWorkspace:
+      allOf:
+        - $ref: "#/components/schemas/WorkspaceInput"
+        - type: object
+          required: [nickname, savedRecipeIds, plan, groceries, basket, voucher, courseProgress, lessonRequests, guest]
+          properties:
+            guest: { type: boolean }
+            lessonRequests:
+              type: array
+              items: { $ref: "#/components/schemas/LessonRequest" }
+    IngredientInput:
+      type: object
+      required: [ingredients]
+      properties:
+        ingredients:
+          type: array
+          maxItems: 50
+          items: { type: string, minLength: 1, maxLength: 60 }
+    RecipeMatch:
+      type: object
+      required: [recipeId, percentage, matched, missing]
+      properties:
+        recipeId: { type: string }
+        percentage: { type: integer }
+        matched:
+          type: array
+          items: { type: string }
+        missing:
+          type: array
+          items: { type: string }
+    LessonInput:
+      type: object
+      required: [cookId, recipeId, startsAt, format, packageSize]
+      properties:
+        cookId: { type: string }
+        recipeId: { type: string }
+        startsAt: { type: string, format: date-time }
+        format: { type: string, enum: [online, home] }
+        packageSize: { type: integer, enum: [1, 5] }
+    LessonRequest:
+      allOf:
+        - $ref: "#/components/schemas/LessonInput"
+        - type: object
+          required: [id, status, total, currency, createdAt]
+          properties:
+            id: { type: string }
+            status: { type: string, enum: [draft] }
+            total: { type: number }
+            currency: { type: string }
+            createdAt: { type: string }
+    FoodSummary:
+      type: object
+      required: [savedRecipes, plannedMeals, groceryItems, lessonRequests, completedLessons]
+      properties:
+        savedRecipes: { type: integer }
+        plannedMeals: { type: integer }
+        groceryItems: { type: integer }
+        lessonRequests: { type: integer }
+        completedLessons: { type: integer }
     HealthStatus:
       type: object
       properties:

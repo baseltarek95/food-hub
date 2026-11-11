@@ -1,10 +1,12 @@
-# [Project name]
+# Food Hub
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Egyptian home cooking with recipe discovery, guided cooking, meal planning, grocery lists and draft requests for home-cook lessons.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/food-hub run dev` — managed frontend workflow; requires its injected PORT and BASE_PATH
+- `pnpm --filter @workspace/api-server run seed:food` — idempotent development sample catalog seed; does not modify existing catalog rows
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -22,23 +24,41 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/food-hub/` — working React app; pages, shared UI and server-backed workspace helpers.
+- `artifacts/mockup-sandbox/src/components/mockups/food-hub/` — approved 19-screen design references; preserve them.
+- `lib/api-spec/openapi.yaml` — API source of truth; regenerate clients after changes.
+- `lib/db/src/schema/` — catalog, anonymous workspaces and lesson draft tables.
+- `artifacts/api-server/src/routes/food.ts` — API input validation, guest isolation, persistence and lesson draft pricing.
+- `artifacts/api-server/src/scripts/seed-food.ts` — curated example recipes and explicitly sample cooks/courses.
+- `artifacts/food-hub/public/images/food-hub/SOURCES.md` — reference photo sources and licensing caveat.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first version uses an anonymous browser workspace, not user authentication. Do not imply cross-device accounts, or collect identity/payment details before integrating real providers.
+- Sample cooks are not verified or bookable. Lesson requests are saved drafts only, not messages, reservations or paid bookings.
+- Ingredient matching uses deterministic ingredient overlap; AI is not connected.
+- Keep unavailable payments, grocery delivery, video calls, reviews, tips and verification explicit. Never display a simulated external success.
+- Guest cookies are HttpOnly, Secure, same-site and stored hashed in PostgreSQL. Losing the cookie loses access to that workspace; do not expose its identifier in UI/logs.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The working app follows all 19 approved screen destinations. Recipe saving, serving adjustment, step timers, supported-browser voice controls and wake locks, meal plans, aggregated grocery lists, cart editing, sample vouchers, course practice checklists, guest nicknames, cook application drafts and lesson draft creation/deletion persist through the API where appropriate.
+
+Services still to connect: real sign-in, verified instructors, payment processing, grocery stores and fulfilment, embedded creator/course videos and live lessons, actual AI suggestions.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+Preserve the approved warm cream-and-green photo-first design and use actual Egyptian food photographs rather than illustrated food placeholders.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- GET `/api/food/workspace` must finish before dependent guest writes or summary loading; it establishes the guest cookie.
+- PATCH only changed workspace sections, await success, and update workspace and summary caches. Do not overwrite the whole workspace from stale UI state.
+- Aggregate grocery ingredients only when BOTH name and unit match.
+- Home visits are unavailable until service-area and safety verification exist.
+- The catalog seed is a development command, not a production startup migration. Plan a deliberate catalog import for production.
+- Current food photography is sourced as design reference, not licensed for a commercial launch. Replace with owned/licensed assets before publishing publicly.
+- `dom.iterable` is required for generated fetch header helpers; Orval React Query generation is pinned to v5.
 
 ## Pointers
 

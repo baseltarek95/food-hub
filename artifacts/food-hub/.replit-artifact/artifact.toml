@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Food Hub"
+description = "A mobile-friendly Egyptian home cooking app with recipe discovery, guided cooking, meal planning and home-cook lesson requests, based on the approved 19-screen Food Hub design."
+version = "1.0.0"
+id = "artifacts/food-hub"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25681
+
+[services.development]
+run = "pnpm --filter @workspace/food-hub run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/food-hub", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/food-hub/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25681"
+BASE_PATH = "/"

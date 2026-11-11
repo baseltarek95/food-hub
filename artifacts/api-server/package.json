@@ -7,7 +7,8 @@
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "seed:food": "esbuild src/scripts/seed-food.ts --bundle --platform=node --format=cjs --external:pino --external:drizzle-orm --external:drizzle-orm/* --outfile=node_modules/.cache/food-seed.cjs && node node_modules/.cache/food-seed.cjs"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
