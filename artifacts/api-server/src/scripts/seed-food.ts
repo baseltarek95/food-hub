@@ -1,7 +1,6 @@
-import { db, pool, foodCatalogTable } from "@workspace/db";
-import { logger } from "../lib/logger";
-
-const recipes = [
+// Data only: shared by the explicit development seed and production recipe export.
+// Importing this module must never connect to or write to a database.
+export const recipes = [
   {
     id: "mahshi", title: "Mahshi warak enab", subtitle: "Grape leaves, slow-cooked with love",
     description: "Tender grape leaves wrapped around a fragrant rice and herb filling, simmered gently with lemon. A comforting Egyptian family favourite.",
@@ -76,30 +75,17 @@ const recipes = [
   },
 ];
 
-const cooks = [
+export const cooks = [
   { id: "om-ahmed", name: "Om Ahmed", area: "Giza, Egypt", bio: "Sample profile: a patient home cook sharing mahshi, molokhia and everyday Egyptian family meals. This is an illustrative instructor, not a verified bookable provider.", languages: ["Arabic"], dishes: ["mahshi", "molokhia"], hourlyRate: 250, currency: "EGP", sample: true },
   { id: "hanan", name: "Hanan", area: "Alexandria, Egypt", bio: "Sample profile: learn Egyptian comfort food, kitchen preparation and the small techniques that make a home-cooked meal special.", languages: ["Arabic", "English"], dishes: ["molokhia", "koshari"], hourlyRate: 300, currency: "EGP", sample: true },
   { id: "samira", name: "Samira", area: "Cairo, Egypt", bio: "Sample profile: simple vegetarian Egyptian favourites for busy families. Real instructor onboarding has not opened yet.", languages: ["Arabic", "English"], dishes: ["koshari", "mahshi"], hourlyRate: 200, currency: "EGP", sample: true },
 ];
-const courses = [
+export const courses = [
   { id: "newlywed-kitchen", title: "The newlywed kitchen", teacher: "Food Hub curriculum preview", image: "/images/food-hub/molokhia.jpg", description: "A sample syllabus for building confidence with everyday Egyptian family meals. Video lessons are not available yet.", price: 499, lessons: ["A calmer kitchen: tools and preparation", "Building a flavourful stock", "Rice that comes out right", "Molokhia, step by step", "Planning a family meal"], sample: true },
   { id: "mahshi-masterclass", title: "Mahshi, made with love", teacher: "Food Hub curriculum preview", image: "/images/food-hub/mahshi.jpg", description: "A sample course outline about preparing leaves, seasoning rice and rolling with confidence. No paid access or hosted video is active.", price: 299, lessons: ["Choosing and preparing grape leaves", "Mixing a fragrant filling", "The folding and rolling technique", "Simmering and serving"], sample: true },
   { id: "everyday-egypt", title: "Everyday Egyptian favourites", teacher: "Food Hub curriculum preview", image: "/images/food-hub/koshari.jpg", description: "A curriculum preview of comforting home dishes and flexible family meal planning.", price: 399, lessons: ["Pantry foundations", "A comforting koshari bowl", "Using leftovers safely", "A week of family dinners"], sample: true },
 ];
-const vouchers = [
+export const vouchers = [
   { code: "FIRSTCOOK", title: "Your first lesson", description: "Illustrative offer: 20% off a future lesson. Not redeemable until payments and real providers are connected.", percent: 20 },
   { code: "LEARN15", title: "Make time to learn", description: "Illustrative offer: 15% off a future course. No purchases can be made yet.", percent: 15 },
 ];
-
-async function seed() {
-  for (const [kind, records] of [["recipe", recipes], ["cook", cooks], ["course", courses], ["voucher", vouchers]] as const) {
-    for (const data of records) {
-      const id = "id" in data ? data.id : data.code;
-      await db.insert(foodCatalogTable).values({ id: `${kind}:${id}`, kind, data })
-        .onConflictDoNothing();
-    }
-  }
-  logger.info("Food Hub sample catalog seeded; services remain unavailable.");
-}
-
-seed().catch((err) => { logger.error({ err }, "Food Hub seeding failed"); process.exitCode = 1; }).finally(() => pool.end());

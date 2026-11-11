@@ -6,7 +6,10 @@ Egyptian home cooking with recipe discovery, guided cooking, meal planning, groc
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm --filter @workspace/food-hub run dev` — managed frontend workflow; requires its injected PORT and BASE_PATH
-- `pnpm --filter @workspace/api-server run seed:food` — idempotent development sample catalog seed; does not modify existing catalog rows
+- `NODE_ENV=development pnpm --filter @workspace/api-server run seed:food` — explicit, idempotent development sample seed; never run against production
+- `pnpm --filter @workspace/api-server run catalog:export` — export reviewed recipe-only production content without database access
+- `pnpm --filter @workspace/api-server run catalog:verify -- <published-origin>` — read-only published catalog, photo and credit verification
+- `pnpm --filter @workspace/api-server run test:catalog` — release and fail-closed verification checks
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -30,7 +33,8 @@ Egyptian home cooking with recipe discovery, guided cooking, meal planning, groc
 - `lib/db/src/schema/` — catalog, anonymous workspaces and lesson draft tables.
 - `artifacts/api-server/src/routes/food.ts` — API input validation, guest isolation, persistence and lesson draft pricing.
 - `artifacts/api-server/src/scripts/seed-food.ts` — curated example recipes and explicitly sample cooks/courses.
-- `artifacts/food-hub/public/images/food-hub/SOURCES.md` — reference photo sources and licensing caveat.
+- `artifacts/food-hub/public/images/food-hub/SOURCES.md` — licensed photo sources, authors, license terms and checksums.
+- `artifacts/api-server/CATALOG-LAUNCH.md` — explicit production recipe import and launch verification procedure.
 
 ## Architecture decisions
 
@@ -57,7 +61,8 @@ Preserve the approved warm cream-and-green photo-first design and use actual Egy
 - Aggregate grocery ingredients only when BOTH name and unit match.
 - Home visits are unavailable until service-area and safety verification exist.
 - The catalog seed is a development command, not a production startup migration. Plan a deliberate catalog import for production.
-- Current food photography is sourced as design reference, not licensed for a commercial launch. Replace with owned/licensed assets before publishing publicly.
+- Public food photos are licensed CC BY-SA photographs of Egyptian dishes. Keep the linked photo credits and ShareAlike terms with the images; do not restore uncleared design-reference photos.
+- Development samples do not establish a published catalog. Import the reviewed recipe-only release deliberately and verify the actual published environment before recommending public launch.
 - `dom.iterable` is required for generated fetch header helpers; Orval React Query generation is pinned to v5.
 
 ## Pointers

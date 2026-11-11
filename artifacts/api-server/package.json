@@ -8,7 +8,10 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "seed:food": "esbuild src/scripts/seed-food.ts --bundle --platform=node --format=cjs --external:pino --external:drizzle-orm --external:drizzle-orm/* --outfile=node_modules/.cache/food-seed.cjs && node node_modules/.cache/food-seed.cjs"
+    "seed:food": "esbuild src/scripts/seed-food-dev.ts --bundle --platform=node --format=cjs --external:pino --external:drizzle-orm --external:drizzle-orm/* --outfile=node_modules/.cache/food-seed.cjs && node node_modules/.cache/food-seed.cjs",
+    "catalog:export": "esbuild src/scripts/catalog-export.ts --bundle --platform=node --format=cjs --external:pino --outfile=node_modules/.cache/catalog-export.cjs && node node_modules/.cache/catalog-export.cjs",
+    "catalog:verify": "node src/scripts/catalog-verify.mjs",
+    "test:catalog": "pnpm run catalog:export && node --test src/scripts/catalog-release.test.mjs"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

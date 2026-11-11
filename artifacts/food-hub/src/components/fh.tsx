@@ -55,7 +55,7 @@ export function Logo() {
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const immersive = location.startsWith('/cook/');
-  if (immersive) return <>{children}</>;
+  if (immersive) return <>{children}<PhotoCreditsLink /></>;
   return (
     <div className="min-h-[100dvh] bg-[#fbf7ed] text-[#25362b]">
       <div className="pointer-events-none fixed inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_top_right,rgba(231,239,226,.9),transparent_72%)]" />
@@ -91,7 +91,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </p>
       </aside>
       <div className="relative md:pl-64">
-        <main className="mx-auto w-full max-w-[1080px] px-5 pb-28 pt-4 md:px-10 md:pb-16 md:pt-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1080px] px-5 pb-28 pt-4 md:px-10 md:pb-16 md:pt-8">{children}<PhotoCreditsLink /></main>
       </div>
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e6e5d9] bg-[#fffdf7]/95 px-2 pb-[max(9px,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
         <div className="flex items-center justify-around">
@@ -110,6 +110,12 @@ export function Shell({ children }: { children: ReactNode }) {
       </nav>
     </div>
   );
+}
+
+function PhotoCreditsLink() {
+  return <footer className="px-5 py-6 text-center text-[11px] text-[#596953]">
+    <a href={`${import.meta.env.BASE_URL}photo-credits.html`} className="underline underline-offset-4">Food photography credits &amp; licenses</a>
+  </footer>;
 }
 
 export function BackButton({ fallback = '/', dark = false }: { fallback?: string; dark?: boolean }) {
