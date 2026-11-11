@@ -7,6 +7,13 @@ The release contains the three curated recipes from `src/scripts/seed-food.ts`.
 Recipes are Food Hub's curated instructions, not copied from the photograph sources.
 Calories are illustrative estimates, not laboratory nutrition claims.
 
+For additions beyond these three recipes, use [CATALOG-EDITOR.md](CATALOG-EDITOR.md).
+It provides validated drafts, offline photo/recipe review, fingerprint-bound
+approval, and an explicit additive release. The legacy `catalog:export` below
+exports only the original launch baseline; it does not bypass editorial
+approval or automatically pick up unreviewed additions. For an expanded release,
+use the editor's fingerprinted release directory and its matching SQL/assets.
+
 **No published environment exists at the time of preparation. The production catalog has not been imported or verified. This is not approval for public launch.** Do not treat a populated development preview as evidence of production content.
 
 Preparation checks include workspace typecheck, automated release/verifier tests, development HTTP checks of all three recipes and licensed photo bytes, and two consecutive SQL-import rehearsals within one rolled-back development transaction. The SQL read-back reported all three expected rows present and matching; no catalog data was changed. The final launch verifier additionally rejects all extra recipes and sample cooks, courses or vouchers. The development preview intentionally contains sample rows and therefore is not a passing recipe-only launch environment. These checks are development evidence only.
@@ -37,7 +44,7 @@ Run the reviewed `import.sql` against the selected production database using the
 
 - One transaction imports all recipes or none.
 - Matching existing rows are left unchanged; rerunning the identical release is safe.
-- Any same-ID row with different content or kind aborts the entire release. Review differences before preparing a separately approved update; this import never silently replaces published edits.
+- Any same-ID row with different content or kind aborts the entire release. The conflict assertion deliberately raises a division-by-zero database error; roll back the failed transaction. Review differences before preparing a separately approved update; this import never silently replaces published edits.
 - No deletions, schema changes, sample-provider imports or user-data writes.
 - The table lock has a five-second timeout and the import has a thirty-second statement timeout. If blocked, the transaction fails rather than waiting indefinitely. Roll back a failed transaction before retrying.
 
@@ -53,7 +60,7 @@ Then, from the workspace root, run with the **actual origin returned by deployme
 pnpm --filter @workspace/api-server run catalog:verify -- https://YOUR-PUBLISHED-ORIGIN
 ```
 
-Use the URL itself in place of the example. The verifier requires the generated release files, reads only public GET endpoints and requires exactly the reviewed recipe IDs and empty cooks, courses and vouchers. It fails on missing/different/additional recipes, development samples, absent photo attribution, wrong photo bytes, redirects, private access gates and unavailable services. It checks `/api/food/catalog`, `/photo-credits.html` and all three licensed JPEGs. Do not weaken privacy to get a passing result; an operator can instead perform equivalent authorized checks and record the evidence.
+Use the URL itself in place of the example. The verifier requires the generated release files, reads only public GET endpoints and requires exactly the reviewed recipe IDs and empty cooks, courses and vouchers. It fails on missing/different/additional recipes, development samples, absent photo attribution, wrong photo bytes, redirects, private access gates and unavailable services. It checks `/api/food/catalog`, `/photo-credits.html` and all reviewed photos. For expanded editorial releases it also checks approval fingerprints and the exact released attribution page, not only the original three JPEGs. Do not weaken privacy to get a passing result; an operator can instead perform equivalent authorized checks and record the evidence.
 
 For development-only rehearsal:
 

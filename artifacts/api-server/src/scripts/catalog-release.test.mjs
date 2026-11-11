@@ -56,7 +56,7 @@ test("release contains only the curated recipes and has a reproducible fingerpri
   const sql = readFileSync(`${releasePath}/import.sql`, "utf8");
   assert.match(sql, /\bBEGIN;/);
   assert.match(sql, /\bCOMMIT;/);
-  assert.match(sql, /RAISE EXCEPTION/);
+  assert.match(sql, /THEN 0 ELSE 1 END AS no_conflicting_recipes/);
   assert.match(sql, /ON CONFLICT \(id\) DO NOTHING/);
   assert.doesNotMatch(sql, /\b(CREATE|ALTER|DROP|TRUNCATE|DELETE|UPDATE)\b/);
 });

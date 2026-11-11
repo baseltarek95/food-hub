@@ -1,2 +1,3 @@
 - [Food photography](food-photography.md) — Food Hub should use actual food photos, not illustrations.
 - [Launch boundaries](food-hub-launch-boundaries.md) — Working cooking features first; guest data and sample lesson drafts must not imply live services.
+- [Recipe editor policy](recipe-editor-policy.md) — Repository review instead of an admin dashboard; future online editors must reuse account authorization.

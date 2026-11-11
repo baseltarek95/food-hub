@@ -11,6 +11,8 @@
     "seed:food": "esbuild src/scripts/seed-food-dev.ts --bundle --platform=node --format=cjs --external:pino --external:drizzle-orm --external:drizzle-orm/* --outfile=node_modules/.cache/food-seed.cjs && node node_modules/.cache/food-seed.cjs",
     "catalog:export": "esbuild src/scripts/catalog-export.ts --bundle --platform=node --format=cjs --external:pino --outfile=node_modules/.cache/catalog-export.cjs && node node_modules/.cache/catalog-export.cjs",
     "catalog:verify": "node src/scripts/catalog-verify.mjs",
+    "catalog:editor": "esbuild src/scripts/catalog-editor.ts --bundle --platform=node --format=cjs --external:pino --outfile=node_modules/.cache/catalog-editor.cjs && node node_modules/.cache/catalog-editor.cjs",
+    "test:editor": "esbuild src/lib/catalog-editor.test.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/catalog-editor-test.cjs && node node_modules/.cache/catalog-editor-test.cjs",
     "test:catalog": "pnpm run catalog:export && node --test src/scripts/catalog-release.test.mjs",
     "test:workspace": "esbuild src/lib/food-workspace-merge.test.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/food-workspace-test.cjs && node node_modules/.cache/food-workspace-test.cjs"
   },
