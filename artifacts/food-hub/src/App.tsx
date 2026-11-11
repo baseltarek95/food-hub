@@ -1,10 +1,12 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
+import { Route, Switch, Redirect, useLocation, useSearch, Router as WouterRouter } from 'wouter';
+import { useAuth } from '@clerk/react';
+import { FoodAuthProvider, AuthReady, AuthPage, GuestImportNotice } from '@/components/auth';
 import { Shell } from '@/components/fh';
 import { useFoodData } from '@/lib/food';
 import HomePage from '@/pages/home';
@@ -18,7 +20,10 @@ import { LiveLessonPage, LessonCompletePage } from '@/pages/lessons';
 import { CartPage, VouchersPage, CheckoutPage, ConfirmationPage } from '@/pages/commerce';
 import { CoursesPage, ProfilePage, CookDashboardPage, BecomeCookPage, WelcomePage } from '@/pages/account';
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
+function HomeEntry() {
+  const { isSignedIn } = useAuth();
+  return isSignedIn ? <Redirect to="/profile" /> : <HomePage />;
+}
 
 /** Loads the workspace on app start: the GET is what creates the guest cookie. */
 function WorkspaceBoot() {
@@ -31,9 +36,12 @@ function Router() {
   const search = useSearch();
   return (
     <Shell>
+      <GuestImportNotice />
       <RoutedErrorBoundary>
         <Switch key={`${path}?${search}`}>
-          <Route path="/" component={HomePage} />
+          <Route path="/" component={HomeEntry} />
+          <Route path="/sign-in/*?">{() => <AuthPage />}</Route>
+          <Route path="/sign-up/*?">{() => <AuthPage signup />}</Route>
           <Route path="/welcome" component={WelcomePage} />
           <Route path="/explore" component={ExplorePage} />
           <Route path="/recipes/:id" component={RecipePage} />
@@ -64,18 +72,25 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
-function App() {
+// A different identity gets a different cache AND component tree. Late responses
+// and unsaved form values from the previous account cannot leak into the next one.
+function AccountSession() {
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } } }));
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WorkspaceBoot />
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
+        <Router />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
   );
+}
+
+function App() {
+  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+    <FoodAuthProvider><AuthReady>{(identity) => <AccountSession key={identity} />}</AuthReady></FoodAuthProvider>
+  </WouterRouter>;
 }
 
 export default App;

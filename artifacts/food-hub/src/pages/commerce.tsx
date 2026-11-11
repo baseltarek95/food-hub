@@ -28,7 +28,7 @@ export function CartPage() {
   const groceries = ws.basket.filter((b) => b.kind === 'grocery');
   return (
     <div>
-      <PageHeader back="/" eyebrow="A little of everything" title="Your cart" subtitle="Courses and grocery lines, saved together in your guest workspace." />
+      <PageHeader back="/" eyebrow="A little of everything" title="Your cart" subtitle="Courses and grocery lines, saved together in your cooking workspace." />
       {ws.basket.length === 0 ? (
         <EmptyState title="Your cart is empty" body="Add a sample course, or send your grocery list here from the planner." action={<div className="flex gap-2"><Link href="/courses" className="fh-btn-2 px-4">Courses</Link><Link href="/planner" className="fh-btn-2 px-4">Planner</Link></div>} />
       ) : (
@@ -77,7 +77,7 @@ export function CartPage() {
 }
 
 export function VouchersPage() {
-  usePageMeta('Vouchers', 'Illustrative vouchers you can attach to your guest cart.');
+  usePageMeta('Vouchers', 'Illustrative vouchers you can attach to your cart.');
   const { catalog, ws, isLoading, error, retry } = useFoodData();
   const { save, saving } = useSaveWorkspace();
   const [code, setCode] = useState('');

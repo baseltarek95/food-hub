@@ -153,6 +153,7 @@ export const GetFoodWorkspaceResponse = zod.object({
 }).optional()
 }).and(zod.object({
   "guest": zod.boolean(),
+  "guestImportAvailable": zod.boolean().optional(),
   "lessonRequests": zod.array(zod.object({
   "cookId": zod.string(),
   "recipeId": zod.string(),
@@ -349,6 +350,114 @@ export const UpdateFoodWorkspaceResponse = zod.object({
 }).optional()
 }).and(zod.object({
   "guest": zod.boolean(),
+  "guestImportAvailable": zod.boolean().optional(),
+  "lessonRequests": zod.array(zod.object({
+  "cookId": zod.string(),
+  "recipeId": zod.string(),
+  "startsAt": zod.coerce.date(),
+  "format": zod.enum(['online', 'home']),
+  "packageSize": zod.union([zod.literal(1),zod.literal(5)])
+}).and(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['draft']),
+  "total": zod.number(),
+  "currency": zod.string(),
+  "createdAt": zod.string()
+})))
+}))
+
+
+export const importFoodGuestResponseOneNicknameMax = 60;
+
+export const importFoodGuestResponseOneSavedRecipeIdsMax = 200;
+
+export const importFoodGuestResponseOnePlanItemIdMax = 80;
+
+export const importFoodGuestResponseOnePlanItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const importFoodGuestResponseOnePlanItemServingsMax = 20;
+
+export const importFoodGuestResponseOnePlanMax = 200;
+
+export const importFoodGuestResponseOneGroceriesItemIdMax = 80;
+
+export const importFoodGuestResponseOneGroceriesItemNameMax = 100;
+
+export const importFoodGuestResponseOneGroceriesItemQuantityMin = 0.01;
+export const importFoodGuestResponseOneGroceriesItemQuantityMax = 100000;
+
+export const importFoodGuestResponseOneGroceriesItemUnitMax = 30;
+
+export const importFoodGuestResponseOneGroceriesMax = 300;
+
+export const importFoodGuestResponseOneBasketItemIdMax = 80;
+
+export const importFoodGuestResponseOneBasketItemReferenceIdMax = 100;
+
+export const importFoodGuestResponseOneBasketItemQuantityMax = 50;
+
+export const importFoodGuestResponseOneBasketMax = 100;
+
+export const importFoodGuestResponseOneVoucherMax = 30;
+
+export const importFoodGuestResponseOneCourseProgressItemCompletedItemMin = 0;
+export const importFoodGuestResponseOneCourseProgressItemCompletedItemMax = 100;
+
+export const importFoodGuestResponseOneCourseProgressItemCompletedMax = 100;
+
+export const importFoodGuestResponseOneCourseProgressMax = 50;
+
+export const importFoodGuestResponseOneCookDraftDisplayNameMax = 60;
+
+export const importFoodGuestResponseOneCookDraftAreaMax = 100;
+
+export const importFoodGuestResponseOneCookDraftDishesMax = 500;
+
+export const importFoodGuestResponseOneCookDraftRateMin = 0;
+export const importFoodGuestResponseOneCookDraftRateMax = 10000;
+
+export const importFoodGuestResponseOneCookDraftHoursMax = 60;
+
+
+
+export const ImportFoodGuestResponse = zod.object({
+  "nickname": zod.string().min(1).max(importFoodGuestResponseOneNicknameMax),
+  "savedRecipeIds": zod.array(zod.string()).max(importFoodGuestResponseOneSavedRecipeIdsMax),
+  "plan": zod.array(zod.object({
+  "id": zod.string().max(importFoodGuestResponseOnePlanItemIdMax),
+  "date": zod.string().regex(importFoodGuestResponseOnePlanItemDateRegExp),
+  "meal": zod.enum(['Breakfast', 'Lunch', 'Dinner']),
+  "recipeId": zod.string(),
+  "servings": zod.number().int().min(1).max(importFoodGuestResponseOnePlanItemServingsMax)
+})).max(importFoodGuestResponseOnePlanMax),
+  "groceries": zod.array(zod.object({
+  "id": zod.string().max(importFoodGuestResponseOneGroceriesItemIdMax),
+  "name": zod.string().min(1).max(importFoodGuestResponseOneGroceriesItemNameMax),
+  "quantity": zod.number().min(importFoodGuestResponseOneGroceriesItemQuantityMin).max(importFoodGuestResponseOneGroceriesItemQuantityMax),
+  "unit": zod.string().max(importFoodGuestResponseOneGroceriesItemUnitMax),
+  "checked": zod.boolean()
+})).max(importFoodGuestResponseOneGroceriesMax),
+  "basket": zod.array(zod.object({
+  "id": zod.string().max(importFoodGuestResponseOneBasketItemIdMax),
+  "kind": zod.enum(['course', 'grocery']),
+  "referenceId": zod.string().max(importFoodGuestResponseOneBasketItemReferenceIdMax),
+  "quantity": zod.number().int().min(1).max(importFoodGuestResponseOneBasketItemQuantityMax)
+})).max(importFoodGuestResponseOneBasketMax),
+  "voucher": zod.string().max(importFoodGuestResponseOneVoucherMax),
+  "courseProgress": zod.array(zod.object({
+  "courseId": zod.string(),
+  "completed": zod.array(zod.number().int().min(importFoodGuestResponseOneCourseProgressItemCompletedItemMin).max(importFoodGuestResponseOneCourseProgressItemCompletedItemMax)).max(importFoodGuestResponseOneCourseProgressItemCompletedMax)
+})).max(importFoodGuestResponseOneCourseProgressMax),
+  "cookDraft": zod.object({
+  "displayName": zod.string().max(importFoodGuestResponseOneCookDraftDisplayNameMax),
+  "area": zod.string().max(importFoodGuestResponseOneCookDraftAreaMax),
+  "dishes": zod.string().max(importFoodGuestResponseOneCookDraftDishesMax),
+  "rate": zod.number().min(importFoodGuestResponseOneCookDraftRateMin).max(importFoodGuestResponseOneCookDraftRateMax),
+  "hours": zod.number().int().min(1).max(importFoodGuestResponseOneCookDraftHoursMax),
+  "format": zod.enum(['online', 'home'])
+}).optional()
+}).and(zod.object({
+  "guest": zod.boolean(),
+  "guestImportAvailable": zod.boolean().optional(),
   "lessonRequests": zod.array(zod.object({
   "cookId": zod.string(),
   "recipeId": zod.string(),

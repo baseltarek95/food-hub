@@ -335,6 +335,74 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getUpdateFoodWorkspaceMutationOptions(options), queryClient);
     }
 
+export const getImportFoodGuestUrl = () => {
+
+
+
+
+  return `/api/food/workspace/import`
+}
+
+export const importFoodGuest = async ( options?: Parameters<typeof customFetch>[1]): Promise<FoodWorkspace> => {
+
+  return customFetch<FoodWorkspace>(getImportFoodGuestUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getImportFoodGuestMutationKey = () => ['importFoodGuest'] as const;
+
+export const getImportFoodGuestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFoodGuest>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importFoodGuest>>, TError,void, TContext> => {
+
+const mutationKey = getImportFoodGuestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importFoodGuest>>, void> = () => {
+
+
+          return  importFoodGuest(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportFoodGuestMutationResult = NonNullable<Awaited<ReturnType<typeof importFoodGuest>>>
+
+    export type ImportFoodGuestMutationError = ErrorType<void>
+
+
+    export const useImportFoodGuest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFoodGuest>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof importFoodGuest>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getImportFoodGuestMutationOptions(options), queryClient);
+    }
+
 export const getMatchFoodIngredientsUrl = () => {
 
 

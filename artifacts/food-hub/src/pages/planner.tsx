@@ -116,7 +116,7 @@ export default function PlannerPage() {
           </form>
 
           {grouped.length === 0 ? (
-            <EmptyState title="No meals planned yet" body="Pick a day and a dish above. Your plan is saved to this browser's guest workspace." />
+            <EmptyState title="No meals planned yet" body="Pick a day and a dish above. Your plan is saved to your cooking workspace." />
           ) : grouped.map(([d, entries]) => (
             <section key={d} aria-label={prettyDate(d)}>
               <h2 className="mb-2 text-[12px] font-extrabold text-[#597359]">{prettyDate(d)}</h2>

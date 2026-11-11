@@ -30,7 +30,7 @@ Egyptian home cooking with recipe discovery, guided cooking, meal planning, groc
 - `artifacts/food-hub/` — working React app; pages, shared UI and server-backed workspace helpers.
 - `artifacts/mockup-sandbox/src/components/mockups/food-hub/` — approved 19-screen design references; preserve them.
 - `lib/api-spec/openapi.yaml` — API source of truth; regenerate clients after changes.
-- `lib/db/src/schema/` — catalog, anonymous workspaces and lesson draft tables.
+- `lib/db/src/schema/` — catalog, guest/account workspaces and lesson draft tables.
 - `artifacts/api-server/src/routes/food.ts` — API input validation, guest isolation, persistence and lesson draft pricing.
 - `artifacts/api-server/src/scripts/seed-food.ts` — curated example recipes and explicitly sample cooks/courses.
 - `artifacts/food-hub/public/images/food-hub/SOURCES.md` — licensed photo sources, authors, license terms and checksums.
@@ -38,7 +38,8 @@ Egyptian home cooking with recipe discovery, guided cooking, meal planning, groc
 
 ## Architecture decisions
 
-- The first version uses an anonymous browser workspace, not user authentication. Do not imply cross-device accounts, or collect identity/payment details before integrating real providers.
+- Clerk manages real accounts. Account workspace ownership comes only from the verified server session; never accept owner IDs from the browser. Guests can still use a browser-only workspace.
+- Import guest work only after explicit signed-in confirmation. Imports combine lists transactionally; ambiguous cook drafts, vouchers, lesson times or size limits must leave both workspaces unchanged with a clear error. After import, clear the guest cookie; never expose account data to the next guest or account on a shared device.
 - Sample cooks are not verified or bookable. Lesson requests are saved drafts only, not messages, reservations or paid bookings.
 - Ingredient matching uses deterministic ingredient overlap; AI is not connected.
 - Keep unavailable payments, grocery delivery, video calls, reviews, tips and verification explicit. Never display a simulated external success.
@@ -48,7 +49,7 @@ Egyptian home cooking with recipe discovery, guided cooking, meal planning, groc
 
 The working app follows all 19 approved screen destinations. Recipe saving, serving adjustment, step timers, supported-browser voice controls and wake locks, meal plans, aggregated grocery lists, cart editing, sample vouchers, course practice checklists, guest nicknames, cook application drafts and lesson draft creation/deletion persist through the API where appropriate.
 
-Services still to connect: real sign-in, verified instructors, payment processing, grocery stores and fulfilment, embedded creator/course videos and live lessons, actual AI suggestions.
+Services still to connect: verified instructors, payment processing, grocery stores and fulfilment, embedded creator/course videos and live lessons, actual AI suggestions.
 
 ## User preferences
 
@@ -57,6 +58,8 @@ Preserve the approved warm cream-and-green photo-first design and use actual Egy
 ## Gotchas
 
 - GET `/api/food/workspace` must finish before dependent guest writes or summary loading; it establishes the guest cookie.
+- Development needs the additive `owner_id` / unique owner index schema change (`pnpm --filter @workspace/db run push`). Apply the same additive schema before running the updated API in another environment.
+- Clerk's proxy must stay before body parsing and its session middleware before API routes. Auth changes must remount all account state, not reuse another identity's query cache or forms.
 - PATCH only changed workspace sections, await success, and update workspace and summary caches. Do not overwrite the whole workspace from stale UI state.
 - Aggregate grocery ingredients only when BOTH name and unit match.
 - Home visits are unavailable until service-area and safety verification exist.

@@ -26,7 +26,7 @@ paths:
       operationId: getFoodWorkspace
       responses:
         "200":
-          description: This browser's guest cooking workspace
+          description: The signed-in account workspace or this browser's guest workspace
           content:
             application/json:
               schema:
@@ -46,6 +46,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FoodWorkspace"
+  /food/workspace/import:
+    post:
+      operationId: importFoodGuest
+      responses:
+        "200":
+          description: Guest workspace imported after explicit confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodWorkspace"
+        "401":
+          description: Sign in first
+        "409":
+          description: Import conflict; both workspaces remain unchanged
   /food/match:
     post:
       operationId: matchFoodIngredients
@@ -286,6 +300,7 @@ components:
           required: [nickname, savedRecipeIds, plan, groceries, basket, voucher, courseProgress, lessonRequests, guest]
           properties:
             guest: { type: boolean }
+            guestImportAvailable: { type: boolean }
             lessonRequests:
               type: array
               items: { $ref: "#/components/schemas/LessonRequest" }

@@ -8,6 +8,7 @@ import { PageHeader, LoadingState, ErrorState, EmptyState, Unavailable, SampleBa
 import { useFoodData, useSaveWorkspace, usePageMeta, useSummary, imgSrc, money, prettyDateTime, uid } from '@/lib/food';
 import { useRemoveLessonRequest } from '@/pages/booking';
 import { useToggleSave } from '@/pages/home';
+import { AccountControls } from '@/components/auth';
 
 export function CoursesPage() {
   usePageMeta('Courses', 'Sample Egyptian cooking course catalog and curricula.');
@@ -64,7 +65,7 @@ export function CoursesPage() {
 const nickSchema = z.object({ nickname: z.string().trim().min(1, 'Enter a nickname.').max(60, 'Keep it under 60 characters.') });
 
 export function ProfilePage() {
-  usePageMeta('Profile', 'Your guest workspace: nickname, saved recipes and lesson drafts.');
+  usePageMeta('Profile', 'Your cooking workspace: nickname, saved recipes, meal plans and lesson drafts.');
   const { catalog, ws, isLoading, error, retry } = useFoodData();
   const summary = useSummary();
   const { save, saving } = useSaveWorkspace();
@@ -78,7 +79,8 @@ export function ProfilePage() {
   const s = summary.data;
   return (
     <div>
-      <PageHeader eyebrow={`${ws.nickname}'s kitchen`} title="Your Food Hub" subtitle="Saved in this browser as a guest. Clearing cookies loses access; please don't store anything sensitive here." />
+      <PageHeader eyebrow={`${ws.nickname}'s kitchen`} title="Your Food Hub" subtitle={ws.guest ? "Saved in this browser as a guest. Sign in to keep your kitchen across devices." : "Your recipes, plans and drafts are saved to your account across devices."} />
+      <div className="mb-5"><AccountControls /></div>
       <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
         <div className="space-y-4">
           <div className="rounded-[18px] bg-[#e8efe4] p-4">
@@ -90,7 +92,7 @@ export function ProfilePage() {
             ) : (
               <div className="flex items-center gap-3">
                 <div className="grid h-14 w-14 place-items-center rounded-full bg-[#efd2b6] text-[16px] font-extrabold text-[#674b34]">{ws.nickname.slice(0, 1).toUpperCase()}</div>
-                <div><p className="text-[16px] font-extrabold" data-testid="text-nickname">{ws.nickname}</p><p className="text-[11px] text-[#748073]">Guest workspace</p></div>
+                <div><p className="text-[16px] font-extrabold" data-testid="text-nickname">{ws.nickname}</p><p className="text-[11px] text-[#748073]">{ws.guest ? 'Guest workspace' : 'Account workspace'}</p></div>
                 <button type="button" onClick={() => { form.reset({ nickname: ws.nickname }); setEditing(true); }} className="ml-auto rounded-full bg-white px-3 py-2 text-[10px] font-bold" data-testid="button-edit-nickname">Edit</button>
               </div>
             )}
@@ -250,7 +252,8 @@ export function WelcomePage() {
           <p className="text-[13px] leading-6 text-[#667365]">Egyptian recipes with guided cook mode, a family meal planner, and sample home-cook lessons, for families and expats missing the taste of home.</p>
           <Link href="/" className="fh-btn w-full" data-testid="link-continue-guest">Continue as guest <ArrowRight size={15} /></Link>
           <Link href="/become-a-cook" className="fh-btn-2 w-full">I want to teach</Link>
-          <p className="rounded-[14px] bg-[#f3f2e8] p-3 text-[11px] leading-[1.55] text-[#6f786c]">No account needed. Your plan, groceries and drafts are saved to a guest workspace tied to this browser's cookie. Clearing cookies loses it, so avoid entering anything sensitive. Sign-in is not available yet.</p>
+          <AccountControls />
+          <p className="rounded-[14px] bg-[#f3f2e8] p-3 text-[11px] leading-[1.55] text-[#6f786c]">No account needed to browse or plan. Guest work is tied to this browser's cookie. Sign in to keep it across devices, then explicitly choose to import your browser workspace.</p>
           <button type="button" onClick={() => setLang(!lang)} className="w-full py-2 text-[12px] font-bold text-[#657668]" aria-expanded={lang}>Arabic language</button>
           {lang && <p className="text-center text-[11px] text-[#7b8377]">An Arabic interface is not available yet.</p>}
         </div>

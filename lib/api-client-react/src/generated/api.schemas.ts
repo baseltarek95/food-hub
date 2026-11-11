@@ -233,9 +233,11 @@ export type LessonRequest = LessonInput & {
 
 export type FoodWorkspace = WorkspaceInput & {
   guest: boolean;
+  guestImportAvailable?: boolean;
   lessonRequests: LessonRequest[];
 } & Required<Pick<WorkspaceInput & {
   guest: boolean;
+  guestImportAvailable?: boolean;
   lessonRequests: LessonRequest[];
 }, 'nickname' | 'savedRecipeIds' | 'plan' | 'groceries' | 'basket' | 'voucher' | 'courseProgress'>>;
 

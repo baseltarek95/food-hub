@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { FoodRecipe } from '@workspace/api-client-react';
 import { imgSrc } from '@/lib/food';
+import { useAuth } from '@clerk/react';
 
 const tabs = [
   { label: 'Home', href: '/', icon: Home, match: (p: string) => p === '/' },
@@ -54,6 +55,7 @@ export function Logo() {
 
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const { isSignedIn } = useAuth();
   const immersive = location.startsWith('/cook/');
   if (immersive) return <>{children}<PhotoCreditsLink /></>;
   return (
@@ -87,7 +89,7 @@ export function Shell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <p className="mt-auto rounded-[14px] bg-[#f3f2e8] p-3 text-[10px] leading-[1.5] text-[#7b8377]">
-          Guest workspace saved in this browser only. Clearing cookies removes access to it.
+          {isSignedIn ? 'Your kitchen is saved to your account across devices.' : <>Guest workspace saved in this browser only. <Link href="/sign-in" className="font-bold underline">Sign in to keep it across devices.</Link></>}
         </p>
       </aside>
       <div className="relative md:pl-64">

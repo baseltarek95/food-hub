@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, isNull } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 import { db, foodWorkspacesTable, foodLessonRequestsTable } from "@workspace/db";
 import {
   GetFoodWorkspaceResponse, UpdateFoodWorkspaceBody, UpdateFoodWorkspaceResponse,
@@ -8,6 +9,7 @@ import {
   CreateLessonRequestResponse, DeleteLessonRequestParams, GetFoodSummaryResponse,
 } from "@workspace/api-zod";
 import { getCatalog } from "../lib/food-catalog";
+import { mergeGuestData } from "../lib/food-workspace-merge";
 
 const router: IRouter = Router();
 const COOKIE = "food_hub_guest";
@@ -16,10 +18,27 @@ const defaults = () => ({
   voucher: "", courseProgress: [],
 });
 
-function workspaceId(req: Request): string | undefined {
+function guestWorkspaceId(req: Request): string | undefined {
   const token = req.headers.cookie?.split(";").map((v) => v.trim()).find((v) => v.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
   return token && /^[a-f0-9]{64}$/.test(token)
     ? createHash("sha256").update(token).digest("hex") : undefined;
+}
+
+function ownerId(req: Request) {
+  const auth = getAuth(req);
+  return auth.userId ?? undefined;
+}
+
+// Identity comes only from the verified session. A signed-in request never falls
+// back to a browser guest, even if the browser still has an unclaimed guest cookie.
+async function workspaceId(req: Request): Promise<string | undefined> {
+  const owner = ownerId(req);
+  const guest = guestWorkspaceId(req);
+  if (!owner && !guest) return undefined;
+  const [row] = await db.select({ id: foodWorkspacesTable.id }).from(foodWorkspacesTable)
+    .where(owner ? eq(foodWorkspacesTable.ownerId, owner)
+      : and(eq(foodWorkspacesTable.id, guest!), isNull(foodWorkspacesTable.ownerId)));
+  return row?.id;
 }
 
 async function readWorkspace(id: string) {
@@ -27,11 +46,24 @@ async function readWorkspace(id: string) {
   if (!row) return undefined;
   const requests = await db.select().from(foodLessonRequestsTable)
     .where(eq(foodLessonRequestsTable.workspaceId, id)).orderBy(desc(foodLessonRequestsTable.createdAt));
-  return GetFoodWorkspaceResponse.parse({ ...defaults(), ...row.data, guest: true, lessonRequests: requests.map((r) => r.data) });
+  return GetFoodWorkspaceResponse.parse({ ...defaults(), ...row.data, guest: !row.ownerId, lessonRequests: requests.map((r) => r.data) });
 }
 
-// A guest workspace is an unregistered browser's private scratchpad, not a login.
-// No client-supplied user IDs, identity documents, payment details or access roles.
+async function hasGuest(req: Request) {
+  const id = guestWorkspaceId(req);
+  if (!id) return false;
+  const [row] = await db.select({ id: foodWorkspacesTable.id }).from(foodWorkspacesTable)
+    .where(and(eq(foodWorkspacesTable.id, id), isNull(foodWorkspacesTable.ownerId)));
+  return !!row;
+}
+
+async function responseWorkspace(req: Request, id: string) {
+  return GetFoodWorkspaceResponse.parse({
+    ...await readWorkspace(id),
+    guestImportAvailable: !!ownerId(req) && await hasGuest(req),
+  });
+}
+
 router.use("/food", (req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
   if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
@@ -55,20 +87,64 @@ router.get("/food/catalog", async (_req, res): Promise<void> => {
 });
 
 router.get("/food/workspace", async (req, res): Promise<void> => {
-  let id = workspaceId(req);
+  let id = await workspaceId(req);
   let state = id ? await readWorkspace(id) : undefined;
   if (!state) {
-    const token = randomBytes(32).toString("hex");
-    id = createHash("sha256").update(token).digest("hex");
-    await db.insert(foodWorkspacesTable).values({ id, data: defaults() });
-    res.cookie(COOKIE, token, { httpOnly: true, secure: true, sameSite: "lax", maxAge: 365 * 86400000, path: "/api/food" });
-    state = await readWorkspace(id);
+    const owner = ownerId(req);
+    if (owner) {
+      await db.insert(foodWorkspacesTable).values({ id: randomUUID(), ownerId: owner, data: defaults() }).onConflictDoNothing();
+      id = await workspaceId(req);
+    } else {
+      const token = randomBytes(32).toString("hex");
+      id = createHash("sha256").update(token).digest("hex");
+      await db.insert(foodWorkspacesTable).values({ id, data: defaults() });
+      res.cookie(COOKIE, token, { httpOnly: true, secure: true, sameSite: "lax", maxAge: 365 * 86400000, path: "/api/food" });
+    }
   }
-  res.json(state);
+  res.json(await responseWorkspace(req, id!));
+});
+
+router.post("/food/workspace/import", async (req, res): Promise<void> => {
+  const owner = ownerId(req);
+  if (!owner) { res.status(401).json({ error: "Sign in before importing your browser workspace." }); return; }
+  const guestId = guestWorkspaceId(req);
+  const id = await workspaceId(req);
+  if (!id) { res.status(409).json({ error: "Load your account workspace before importing." }); return; }
+  try {
+    await db.transaction(async (tx) => {
+      // Consistent lock order serializes imports with account saves and retries.
+      const [account] = await tx.select().from(foodWorkspacesTable)
+        .where(and(eq(foodWorkspacesTable.id, id), eq(foodWorkspacesTable.ownerId, owner))).for("update");
+      if (!account || !guestId) return;
+      const [guest] = await tx.select().from(foodWorkspacesTable)
+        .where(and(eq(foodWorkspacesTable.id, guestId), isNull(foodWorkspacesTable.ownerId))).for("update");
+      if (!guest) return; // Already imported, including retries from another tab.
+      const merged = mergeGuestData(account.data, guest.data);
+      const oldRequests = await tx.select().from(foodLessonRequestsTable).where(eq(foodLessonRequestsTable.workspaceId, guestId));
+      const accountRequests = await tx.select().from(foodLessonRequestsTable).where(eq(foodLessonRequestsTable.workspaceId, id));
+      if (oldRequests.length + accountRequests.length > 20
+        || oldRequests.some((r) => accountRequests.some((a) => a.startsAt === r.startsAt))) {
+        throw new Error("Your lesson drafts overlap or exceed the 20-draft limit. Both workspaces are unchanged. Sign out to review browser drafts.");
+      }
+      await tx.update(foodWorkspacesTable).set({ data: merged, updatedAt: new Date() }).where(eq(foodWorkspacesTable.id, id));
+      await tx.update(foodLessonRequestsTable).set({ workspaceId: id }).where(eq(foodLessonRequestsTable.workspaceId, guestId));
+      await tx.delete(foodWorkspacesTable).where(eq(foodWorkspacesTable.id, guestId));
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "GuestImportConflict") {
+      res.status(409).json({ error: error.message }); return;
+    }
+    if (error instanceof Error && error.message.startsWith("Your lesson drafts")) {
+      res.status(409).json({ error: error.message }); return;
+    }
+    throw error;
+  }
+  res.clearCookie(COOKIE, { httpOnly: true, secure: true, sameSite: "lax", path: "/api/food" });
+  res.json(await responseWorkspace(req, id));
 });
 
 router.patch("/food/workspace", async (req, res): Promise<void> => {
-  const id = workspaceId(req);
+  const id = await workspaceId(req);
   if (!id) { res.status(401).json({ error: "Open your cooking workspace before saving." }); return; }
   const body = UpdateFoodWorkspaceBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Some saved details are invalid.", details: body.error.flatten() }); return; }
@@ -88,7 +164,7 @@ router.patch("/food/workspace", async (req, res): Promise<void> => {
     .set({ data: sql`${foodWorkspacesTable.data} || ${JSON.stringify(data)}::jsonb`, updatedAt: new Date() })
     .where(eq(foodWorkspacesTable.id, id)).returning({ id: foodWorkspacesTable.id });
   if (!updated) { res.status(401).json({ error: "Your guest workspace expired. Reload to start a new one." }); return; }
-  res.json(UpdateFoodWorkspaceResponse.parse(await readWorkspace(id)));
+  res.json(UpdateFoodWorkspaceResponse.parse(await responseWorkspace(req, id)));
 });
 
 router.post("/food/match", async (req, res): Promise<void> => {
@@ -107,7 +183,7 @@ router.post("/food/match", async (req, res): Promise<void> => {
 });
 
 router.post("/food/lesson-requests", async (req, res): Promise<void> => {
-  const id = workspaceId(req);
+  const id = await workspaceId(req);
   if (!id || !await readWorkspace(id)) { res.status(401).json({ error: "Open your workspace first." }); return; }
   const body = CreateLessonRequestBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Select a cook, dish and valid future time." }); return; }
@@ -135,7 +211,7 @@ router.post("/food/lesson-requests", async (req, res): Promise<void> => {
 });
 
 router.delete("/food/lesson-requests/:id", async (req, res): Promise<void> => {
-  const id = workspaceId(req);
+  const id = await workspaceId(req);
   const params = DeleteLessonRequestParams.safeParse(req.params);
   if (!id) { res.status(401).json({ error: "Open your workspace first." }); return; }
   if (!params.success) { res.status(400).json({ error: "Invalid request." }); return; }
@@ -147,7 +223,7 @@ router.delete("/food/lesson-requests/:id", async (req, res): Promise<void> => {
 });
 
 router.get("/food/summary", async (req, res): Promise<void> => {
-  const id = workspaceId(req);
+  const id = await workspaceId(req);
   const state = id ? await readWorkspace(id) : undefined;
   res.json(GetFoodSummaryResponse.parse({
     savedRecipes: state?.savedRecipeIds?.length ?? 0,

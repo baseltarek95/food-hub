@@ -10,8 +10,10 @@ import type { WorkspaceInput } from './workspaceInput';
 
 export type FoodWorkspace = WorkspaceInput & {
   guest: boolean;
+  guestImportAvailable?: boolean;
   lessonRequests: LessonRequest[];
 } & Required<Pick<WorkspaceInput & {
   guest: boolean;
+  guestImportAvailable?: boolean;
   lessonRequests: LessonRequest[];
 }, 'nickname' | 'savedRecipeIds' | 'plan' | 'groceries' | 'basket' | 'voucher' | 'courseProgress'>>;

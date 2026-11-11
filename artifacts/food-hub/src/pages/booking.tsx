@@ -68,7 +68,7 @@ export default function BookingPage() {
 
   return (
     <div>
-      <PageHeader back={`/cooks/${cook.id}`} eyebrow={`Lesson request · ${cook.name}`} title="Make time to learn" subtitle="Save a draft request in your guest workspace. Nothing is reserved, sent to the cook, or paid." />
+      <PageHeader back={`/cooks/${cook.id}`} eyebrow={`Lesson request · ${cook.name}`} title="Make time to learn" subtitle="Save a draft request in your cooking workspace. Nothing is reserved, sent to the cook, or paid." />
       <form onSubmit={submit} noValidate className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
@@ -99,7 +99,7 @@ export default function BookingPage() {
           <div className="fh-card p-4 text-[12px]"><p className="flex justify-between">Rate <b>{money(cook.hourlyRate, cook.currency)} / hr</b></p><p className="mt-1 flex justify-between">Lessons <b>{pkg}</b></p></div>
           {create.isError && <p role="alert" className="rounded-[12px] bg-[#f6e3db] p-3 text-[12px] text-[#8a3f2a]">{errMessage(create.error)}</p>}
           <button type="submit" disabled={create.isPending} className="fh-btn w-full" data-testid="button-save-draft">{create.isPending ? 'Saving...' : <>Save draft request <ArrowRight size={14} /></>}</button>
-          <Unavailable title="This is not a booking">Scheduling, payments and messaging cooks are not connected. Your draft only lives in this browser's guest workspace.</Unavailable>
+          <Unavailable title="This is not a booking">Scheduling, payments and messaging cooks are not connected. This is a saved draft only, not a reservation or message.</Unavailable>
           {mine.length > 0 && (
             <div className="fh-card p-4">
               <p className="text-[12px] font-extrabold">Your drafts with {cook.name}</p>
